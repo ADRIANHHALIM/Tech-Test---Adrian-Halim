@@ -1,0 +1,148 @@
+@model IReadOnlyList<TechTest.Models.OtpSettingItemVm>
+@{
+    ViewData["Title"] = "OTP Setting";
+}
+
+<style>
+    .otp-card { background: #ffffff; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); overflow: hidden; }
+    .otp-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: #ffffff; border-bottom: 1px solid #e5e7eb; cursor: pointer; user-select: none; }
+    .otp-title { color: #b91c1c; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; margin: 0; }
+    .otp-toggle-btn { background: none; border: none; cursor: pointer; padding: 4px; display: inline-flex; align-items: center; justify-content: center; color: #4b5563; border-radius: 4px; transition: transform 0.2s ease; }
+    .otp-toggle-btn:focus-visible { outline: 2px solid #2b74a8; outline-offset: 1px; }
+    .otp-toggle-btn.collapsed { transform: rotate(180deg); }
+    .otp-body { padding: 22px 18px 18px; }
+    .otp-alert { display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 0.875rem; font-weight: 500; transition: opacity 0.35s ease, transform 0.35s ease; }
+    .otp-alert.fade-out { opacity: 0; transform: translateY(-4px); pointer-events: none; }
+    .alert-close-btn { background: none; border: none; color: #166534; font-size: 1.25rem; cursor: pointer; padding: 0 4px; line-height: 1; opacity: 0.65; border-radius: 4px; transition: opacity 0.15s ease; }
+    .alert-close-btn:hover { opacity: 1; }
+    .alert-close-btn:focus-visible { outline: 2px solid #166534; outline-offset: 1px; }
+    .table-box { border: 1px solid #9ca3af; border-radius: 8px; overflow: hidden; }
+    .otp-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.875rem; }
+    .otp-table th, .otp-table td { padding: 10px 14px; border-bottom: 1px solid #9ca3af; vertical-align: middle; }
+    .otp-table tr:last-child td { border-bottom: none; }
+    .col-action { width: 42%; font-weight: 700; color: #4b5563; }
+    .col-channel { width: 58%; font-weight: 700; color: #4b5563; }
+    .action-label { font-weight: 700; color: #4b5563; }
+    .channel-cell { width: 29%; }
+    .master-channel-label { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-weight: 600; color: #6b7280; user-select: none; }
+    .chk-custom { width: 17px; height: 17px; accent-color: #2b74a8; cursor: pointer; border-radius: 3px; }
+    .chk-custom:focus-visible { outline: 2px solid #2b74a8; outline-offset: 1px; }
+    .otp-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
+    .btn-update { background-color: #2b74a8; color: #ffffff; font-weight: 600; font-size: 0.9rem; padding: 8px 24px; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.15s ease; }
+    .btn-update:hover { background-color: #235d87; }
+    .btn-update:focus-visible { outline: 2px solid #2b74a8; outline-offset: 2px; }
+</style>
+
+<div class="otp-card">
+    <header class="otp-header" id="cardHeader">
+        <h1 class="otp-title">OTP Setting</h1>
+        <button type="button" class="otp-toggle-btn" id="btnToggle" aria-expanded="true" aria-controls="cardBody" aria-label="Toggle OTP Setting section">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M8 4.5l5.5 5.5-1.4 1.4L8 7.3 3.9 11.4 2.5 10z"/>
+            </svg>
+        </button>
+    </header>
+
+    <div class="otp-body" id="cardBody">
+        @if (TempData["SuccessMessage"] is string msg)
+        {
+            <div class="otp-alert" id="successAlert" role="status">
+                <span>@msg</span>
+                <button type="button" class="alert-close-btn" id="btnCloseAlert" aria-label="Close notification">&times;</button>
+            </div>
+        }
+
+        <form asp-action="Update" method="post" id="otpForm">
+            <div class="table-box">
+                <table class="otp-table">
+                    <thead>
+                        <tr>
+                            <th class="col-action" scope="col">Action</th>
+                            <th class="col-channel" colspan="2" scope="colgroup">Channel Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="action-label">Checklist All</td>
+                            <td class="channel-cell">
+                                <label class="master-channel-label" for="chkAllEmail">
+                                    <input type="checkbox" id="chkAllEmail" class="chk-custom" />
+                                    <span>Email</span>
+                                </label>
+                            </td>
+                            <td class="channel-cell">
+                                <label class="master-channel-label" for="chkAllWhatsapp">
+                                    <input type="checkbox" id="chkAllWhatsapp" class="chk-custom" />
+                                    <span>Whatsapp</span>
+                                </label>
+                            </td>
+                        </tr>
+
+                        @for (var i = 0; i < Model.Count; i++)
+                        {
+                            var item = Model[i];
+                            <tr>
+                                <td class="action-label">
+                                    @item.ActionName
+                                    <input type="hidden" name="Items[@i].Id" value="@item.Id" />
+                                </td>
+                                <td class="channel-cell">
+                                    <input type="checkbox" name="Items[@i].IsEmailEnabled" value="true" class="chk-custom chk-email" @(item.IsEmailEnabled ? "checked" : "") aria-label="Enable email for @item.ActionName" />
+                                    <input type="hidden" name="Items[@i].IsEmailEnabled" value="false" />
+                                </td>
+                                <td class="channel-cell">
+                                    <input type="checkbox" name="Items[@i].IsWhatsappEnabled" value="true" class="chk-custom chk-whatsapp" @(item.IsWhatsappEnabled ? "checked" : "") aria-label="Enable whatsapp for @item.ActionName" />
+                                    <input type="hidden" name="Items[@i].IsWhatsappEnabled" value="false" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="otp-actions">
+                <button type="submit" class="btn-update">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const emailMaster = document.getElementById('chkAllEmail');
+        const waMaster = document.getElementById('chkAllWhatsapp');
+        const emailBoxes = document.querySelectorAll('.chk-email');
+        const waBoxes = document.querySelectorAll('.chk-whatsapp');
+
+        const sync = (master, boxes) => master.checked = boxes.length > 0 && [...boxes].every(b => b.checked);
+        emailMaster.addEventListener('change', () => emailBoxes.forEach(b => b.checked = emailMaster.checked));
+        waMaster.addEventListener('change', () => waBoxes.forEach(b => b.checked = waMaster.checked));
+        emailBoxes.forEach(b => b.addEventListener('change', () => sync(emailMaster, emailBoxes)));
+        waBoxes.forEach(b => b.addEventListener('change', () => sync(waMaster, waBoxes)));
+        sync(emailMaster, emailBoxes);
+        sync(waMaster, waBoxes);
+
+        const toggleBtn = document.getElementById('btnToggle');
+        const header = document.getElementById('cardHeader');
+        const body = document.getElementById('cardBody');
+        const toggleSection = () => {
+            const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+            toggleBtn.setAttribute('aria-expanded', !isExpanded);
+            toggleBtn.classList.toggle('collapsed', isExpanded);
+            body.style.display = isExpanded ? 'none' : 'block';
+        };
+        header.addEventListener('click', (e) => { if (!toggleBtn.contains(e.target)) toggleSection(); });
+        toggleBtn.addEventListener('click', toggleSection);
+
+        const alertBox = document.getElementById('successAlert');
+        const dismissAlert = () => {
+            if (alertBox) {
+                alertBox.classList.add('fade-out');
+                setTimeout(() => alertBox.remove(), 350);
+            }
+        };
+        const btnCloseAlert = document.getElementById('btnCloseAlert');
+        if (btnCloseAlert) btnCloseAlert.addEventListener('click', dismissAlert);
+        if (alertBox) setTimeout(dismissAlert, 3500);
+    });
+</script>
